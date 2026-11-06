@@ -1104,6 +1104,26 @@ function applyParams(p){
   if (notes.length) toast('Filtres du site appliqués. À noter : ' + notes.join(', ') + '.');
 }
 
+/* « Changer de compte » sans compte Google : vue visiteur, ou code de gestion du propriétaire */
+const baseAcces = () => API ? location.origin + location.pathname : (D.exec || '');
+function changerAcces(){
+  const P = $('tagpanel'), base = baseAcces();
+  P.innerHTML = `<div class="box"><h2>Changer de compte</h2>
+    <p class="note">Vous êtes actuellement en <b>${D.me.gestion ? 'gestion (propriétaire)' : 'lecture (visiteur)'}</b>.</p>
+    ${D.me.gestion && D.cle && base ? `<a class="btn s" target="_top" href="${esc(base + '?cle=' + encodeURIComponent(D.cle))}">Voir le Studio comme un visiteur</a>` : ''}
+    <div class="infobox"><label for="codeGestion">Code de gestion (la fin de votre lien de gestion, après « gestion= »)</label>
+    <input id="codeGestion" type="password" autocomplete="current-password" style="width:100%;padding:10px 12px;border:0;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);background:var(--panel);color:var(--ink);font:inherit"></div>
+    <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p" data-acces="1">Ouvrir en gestion</button><button class="btn s" data-tgclose="1">Fermer</button></div></div>`;
+  P.hidden = false; setTimeout(() => { const i = $('codeGestion'); if (i) i.focus(); }, 50);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-acces]')) return;
+  const code = ($('codeGestion').value || '').trim().replace(/^.*gestion=/, '').replace(/[&#].*$/, ''), base = baseAcces();
+  if (!code) { toast('Collez votre code ou votre lien de gestion.'); return; }
+  if (!base) { toast('Adresse du Studio inconnue : ouvrez directement votre lien de gestion.'); return; }
+  window.top.location.href = base + '?gestion=' + encodeURIComponent(code);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'codeGestion') document.querySelector('[data-acces]').click(); });
 function load(json){
   D = JSON.parse(json); MEDIA = D.medias; CUR = D.lists.crews;
   buildFacets();
@@ -1111,7 +1131,11 @@ function load(json){
   /* lien public : le bouton sert à se connecter avec son compte Google (propriétaire, coachs).
      Inutile avec le lien de gestion, et sans effet dans studio.html, qui n'utilise pas les comptes Google. */
   const a = $('who').parentNode.querySelector('a');
-  if (a) { if (D.me.gestion || API) a.style.display = 'none'; else if (D.me.pub) a.textContent = 'Se connecter'; }
+  if (a) {
+    /* page GitHub ou lien de gestion : pas de compte Google, le bouton passe d'un accès à l'autre (gestion ou visiteur) */
+    if (D.me.gestion || API) { a.textContent = 'Changer de compte'; a.style.display = ''; a.onclick = ev => { ev.preventDefault(); changerAcces(); }; }
+    else if (D.me.pub) a.textContent = 'Se connecter';
+  }
   $('sub').textContent = `Saison ${D.saison} · ${MEDIA.length} médias · ${D.me.owner ? 'propriétaire' : D.me.staff ? 'coach' : D.me.pub ? 'lecture' : 'coureur'}${D.me.owner ? ' · version ' + VERSION + (D.version === VERSION ? '' : ' (Code.gs : ' + (D.version || 'ancien') + ')') : ''}`;
 }
 /* délai dépassé : presque toujours plusieurs comptes Google connectés dans le navigateur */
