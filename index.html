@@ -488,8 +488,11 @@ const run = (fn, ...a) => {
     .then(r => { if (!r.ok) throw new Error('Le serveur du Studio a répondu ' + r.status + '. Réessayez dans un instant.'); return r.json(); })
     .then(o => { if (o.err) throw new Error(o.err); return o.ok; });
 };
-const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
-const fmtLong = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+/* « Hors dates » : vidéos de référence (autres équipages, autre époque), rangées à part, après les séances */
+const HORS = 'Hors dates', dk = d => d === HORS ? '' : d;
+const fmtDate = d => d === HORS ? HORS : new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
+const fmtLong = d => d === HORS ? HORS : new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+const duJour = d => d === HORS ? '« Hors dates »' : 'du ' + fmtLong(d);
 const fmtSize = mo => mo >= 1000 ? (mo / 1000).toFixed(1).replace('.', ',') + ' Go' : (mo || 0) + ' Mo';
 const PALETTE = ['#d1495b','#2a9d8f','#3d5a80','#e07a1f','#7b4fa0','#4f8a3c','#b5838d','#c9a227','#5e8b7e','#8c5e9e'];
 const AUTRE = 'Autre';
@@ -498,7 +501,7 @@ const color = n => { const i = CUR.indexOf(n); return i < 0 ? '#9aa5a8' : PALETT
 const crewName = (n, long) => CUR.includes(n) || n === AUTRE ? esc(n) : `<span class="old">${esc(n)}${long && D.crewSeason[n] ? ' · saison ' + esc(D.crewSeason[n]) : ''}</span>`;
 const thumb = (m, w) => THUMBS[m.id] ? THUMBS[m.id].replace(/=s\d+$/, '=s' + w) : `${DRV}/thumbnail?id=${m.id}&sz=w${w}`;
 
-const VERSION = '06-11 visuel'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
+const VERSION = '12-11 hors dates'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
 let FACETS = [], state = {q:'', grp:'seance'};
 const selected = new Set();
 let selAnchor = '';
@@ -507,7 +510,7 @@ function buildFacets(){
   FACETS = [
     {key:'mark', label:'Sélection', opts: ['★ Favoris','♥ Coups de cœur'], get: m => [m.star && '★ Favoris', m.heart && '♥ Coups de cœur'].filter(Boolean)},
     {key:'status', label:'Statut', opts: ['À taguer','Tagué'], get: m => [m.inbox ? 'À taguer' : 'Tagué']},
-    {key:'seance', label:'Séance', opts: [...new Set(MEDIA.map(m => m.date))].sort(), get: m => [m.date]},
+    {key:'seance', label:'Séance', opts: [...new Set(MEDIA.map(m => m.date))].sort((a, b) => (a === HORS) - (b === HORS) || a.localeCompare(b)), get: m => [m.date]},
     {key:'crew', label:'Équipage', opts: [...CUR, AUTRE], get: m => m.crews},
     {key:'allure', label:'Allure', opts: L.allures, get: m => [m.allure]},
     {key:'wind', label:'Force du vent', opts: L.vents, get: m => [m.wind]},
@@ -523,7 +526,7 @@ function matches(m, except){
   if (state.q) { const t = textOf(m); if (!state.q.toLowerCase().split(/\s+/).every(w => t.includes(w))) return false; }
   return true;
 }
-const visible = () => MEDIA.filter(m => matches(m)).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+const visible = () => MEDIA.filter(m => matches(m)).sort((a, b) => (dk(b.date) + b.time).localeCompare(dk(a.date) + a.time));
 function windOf(date){ const c = {}; MEDIA.forEach(m => { if (m.date === date && m.wind) c[m.wind] = (c[m.wind] || 0) + 1; }); return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || ''; }
 
 function renderFilters(){
@@ -570,7 +573,7 @@ function card(m){
     ${m.type === 'Vidéo' ? `<span class="badge">▶ vidéo</span>` : ''}
     ${nc ? `<span class="cbadge" title="${nc} commentaire${nc > 1 ? 's' : ''}">💬 ${nc}</span>` : ''}
     <button class="sel" data-sel="${m.id}" aria-pressed="${sel}" aria-label="Sélectionner">${sel ? '✓' : ''}</button>
-    <div class="meta"><div class="l1"><span class="nm">${crews}</span><span class="r">${marks(m)}<span class="t">${esc(m.time)}</span></span></div>
+    <div class="meta"><div class="l1"><span class="nm">${crews}</span><span class="r">${marks(m)}<span class="t">${m.date === HORS ? 'Réf.' : esc(m.time)}</span></span></div>
     <div class="l2">${l2}</div>${m.info ? `<div class="l3" title="${esc(m.info)}">${esc(m.info)}</div>` : ''}</div></article>`;
 }
 
@@ -578,7 +581,7 @@ let current = [];
 function trashCard(m){
   return `<article class="card"><div class="thumb"><img loading="lazy" alt="" src="${thumb(m, 480)}" data-tid="${m.id}" style="opacity:.55"></div>
     ${m.type === 'Vidéo' ? `<span class="badge">▶ vidéo</span>` : ''}
-    <div class="trash"><b style="color:var(--ink)">${esc(m.file)}</b><span>Séance du ${esc(m.date)} · supprimé le ${esc(m.le)}<br>Effacé pour de bon le ${esc(m.fin)}</span>
+    <div class="trash"><b style="color:var(--ink)">${esc(m.file)}</b><span>${m.date === HORS ? 'Hors dates' : 'Séance du ' + esc(m.date)} · supprimé le ${esc(m.le)}<br>Effacé pour de bon le ${esc(m.fin)}</span>
     <div class="row"><button class="p" data-restore="${m.id}">Restaurer</button><button class="k" data-purge="${m.id}">Supprimer définitivement</button></div></div></article>`;
 }
 function renderTrash(){
@@ -591,7 +594,7 @@ function renderTrash(){
 function renderResults(){
   if (state.trash && D.me.owner) { current = []; renderTrash(); return; }
   current = visible();
-  const nV = current.filter(m => m.type === 'Vidéo').length, nS = new Set(current.map(m => m.date)).size;
+  const nV = current.filter(m => m.type === 'Vidéo').length, nS = new Set(current.map(m => m.date).filter(d => d !== HORS)).size;
   $('count').innerHTML = `${current.length} média${current.length > 1 ? 's' : ''}<small>${current.length - nV} photos · ${nV} vidéos · ${nS} séance${nS > 1 ? 's' : ''}</small>`;
   let a = '';
   FACETS.forEach(f => state[f.key].forEach(v => a += `<button class="chip" data-f="${f.key}" data-v="${esc(v)}">${esc(optLabel(f, v))} ✕</button>`));
@@ -607,7 +610,7 @@ function renderResults(){
   if (state.grp === 'flat') { $('results').innerHTML = `<div class="grid">${current.map(card).join('')}</div>`; return; }
   const groups = {};
   current.forEach(m => (groups[m.date] = groups[m.date] || []).push(m));
-  $('results').innerHTML = Object.keys(groups).sort().reverse().map(k => {
+  $('results').innerHTML = Object.keys(groups).sort((a, b) => dk(b).localeCompare(dk(a))).map(k => {
     const g = groups[k], crews = [...new Set(g.flatMap(m => m.crews))].map(c => crewName(c)).join(', ');
     return `<section class="group"><div class="group-h"><h2>${fmtLong(k)}</h2><span>${g.length} médias${windOf(k) ? ' · vent ' + esc(windOf(k)) : ''}${crews ? ' · ' + crews : ''}</span>${D.me.staff ? `<button data-dategroup="${k}">Changer la date</button>` : ''}<button data-selgroup="${k}">Tout sélectionner</button></div><div class="grid">${g.map(card).join('')}</div></section>`;
   }).join('');
@@ -1042,23 +1045,24 @@ document.addEventListener('click', async e => {
   if (d.datesel || d.dategroup || d.dateone) {
     /* une vidéo, une séance entière ou la sélection : même fenêtre */
     const ids = d.dateone ? [d.dateone] : d.dategroup ? MEDIA.filter(m => m.date === d.dategroup).map(m => m.id) : [...selected];
-    const n = ids.length, from = MEDIA.find(m => m.id === ids[0]).date;
+    const n = ids.length, from = MEDIA.find(m => m.id === ids[0]).date, hors = from === HORS;
     dateIds = ids; tagDraft = null;
     $('tagpanel').innerHTML = `<div class="box"><h2>Changer la date</h2>
-      <p class="note">${n} média${n > 1 ? 's' : ''}${d.dategroup ? ' de la séance du ' + fmtLong(d.dategroup) : ''}. Choisissez le vrai jour de prise de vue.</p>
-      <input type="date" id="newdate" value="${from}" style="font:inherit;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)">
+      <p class="note">${n} média${n > 1 ? 's' : ''}${d.dategroup ? (hors ? ` rangé${n > 1 ? 's' : ''} « Hors dates »` : ' de la séance du ' + fmtLong(d.dategroup)) : ''}. Choisissez le vrai jour de prise de vue, ou cochez « Hors dates ».</p>
+      <input type="date" id="newdate" value="${hors ? '' : from}"${hors ? ' disabled' : ''} style="font:inherit;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)">
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0;cursor:pointer"><input type="checkbox" id="horsdates"${hors ? ' checked' : ''} onchange="document.getElementById('newdate').disabled = this.checked" style="margin-top:3px"><span><b>Hors dates</b><br><span class="note">Vidéo de référence (autre équipage, autre époque) : rangée à part, sans séance.</span></span></label>
       <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p" data-dateapply="1">Enregistrer</button><button class="btn s" data-tgclose="1">Annuler</button></div></div>`;
-    $('tagpanel').hidden = false; $('newdate').focus(); return;
+    $('tagpanel').hidden = false; $(hors ? 'horsdates' : 'newdate').focus(); return;
   }
   if (d.dateapply) {
-    const v = $('newdate').value, n = dateIds.length;
+    const v = $('horsdates').checked ? HORS : $('newdate').value, n = dateIds.length;
     if (!v) { $('newdate').focus(); return; }
     t.disabled = true; t.textContent = 'Enregistrement…';
     try {
       load(await run('changerDate', dateIds, v));
       state.seance.forEach(x => { if (!MEDIA.some(m => m.date === x)) state.seance.delete(x); });
       selected.clear(); $('tagpanel').hidden = true; lbIdx = -1; renderLb(); renderAll();
-      toast(`${n} média${n > 1 ? 's' : ''} daté${n > 1 ? 's' : ''} du ${fmtLong(v)}.`);
+      toast(v === HORS ? `${n} média${n > 1 ? 's' : ''} rangé${n > 1 ? 's' : ''} « Hors dates ».` : `${n} média${n > 1 ? 's' : ''} daté${n > 1 ? 's' : ''} du ${fmtLong(v)}.`);
     } catch (err) { t.disabled = false; t.textContent = 'Enregistrer'; toast(err.message); }
     return;
   }
@@ -1099,7 +1103,8 @@ function applyParams(p){
   const notes = [], norm = s => String(s).replace(/\s+/g, '').replace(/[‐-―-]/g, '–');
   if (p.equipage) CUR.includes(p.equipage) ? state.crew.add(p.equipage) : notes.push(`équipage « ${p.equipage} » absent de la saison`);
   if (p.type === 'video') state.type.add('Vidéo'); if (p.type === 'photo') state.type.add('Photo');
-  if (p.date) MEDIA.some(m => m.date === p.date) ? state.seance.add(p.date) : notes.push(`aucun média le ${fmtLong(p.date)}`);
+  if (p.date === 'hors') p.date = HORS;
+  if (p.date) MEDIA.some(m => m.date === p.date) ? state.seance.add(p.date) : notes.push(`aucun média ${duJour(p.date)}`);
   if (p.vent) { const w = D.lists.vents.find(x => norm(x) === norm(p.vent)); w ? state.wind.add(w) : notes.push(`vent « ${p.vent} » non reconnu`); }
   if (p.theme) { const m = THEMES[p.theme]; if (m) { (m.man || []).forEach(x => state.man.add(x)); (m.allure || []).forEach(x => state.allure.add(x)); } else notes.push(`thème « ${p.theme} » pas encore tagué`); }
   if (notes.length) toast('Filtres du site appliqués. À noter : ' + notes.join(', ') + '.');
