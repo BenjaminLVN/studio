@@ -422,6 +422,45 @@ a{color:var(--marque)}
 @keyframes reflet{to{background-position:-200% 0}}
 main{animation:entree .3s var(--doux) both}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+/* ===== Couleurs de la charte du QG du Centre (v8, 16/11) =====
+   Comme La caisse : marine, vert éclat #01A84D et vert profond #017F38 (n° 11), couleurs d'état de la charte, et le ciel
+   de la pastille du Studio (#6CC4FF, 2.6b) en aplat, texte marine dessus, jamais pour un état. Remplace le bleu, le cyan
+   et l'orange du thème « La Caisse ». Polices : Kanit et IBM Plex (C15), inchangées. */
+:root{
+  --marine:#0F2233; --marine-haute:#16304A; --sur-marine:#FFFFFF; --sur-marine-2:#A9B8C6;
+  --vert:#7CEB96; --vert-eclat:#01A84D; --ciel:#6CC4FF; --ciel-doux:#E3F3FF;
+  --marque:#017F38; --marque-2:#01A84D; --orange:var(--ciel); --orange-ink:#7A5200; --orange-soft:#FFF4CC; --blue-soft:#E6EEF4;
+  --bg:#F3F6F8; --panel:#FFFFFF; --ink:#0F2233; --muted:#5A6B7A; --line:#D7E0E7;
+  --accent:var(--marque); --accent-ink:#FFFFFF; --flag:var(--ciel); --chip:#E6EEF4; --chip-on:#0F2233; --chip-on-ink:#FFFFFF;
+  --ombre:0 1px 2px rgba(15,34,51,.04),0 6px 20px rgba(15,34,51,.06);
+  --ombre-haute:0 1px 2px rgba(15,34,51,.05),0 12px 32px rgba(15,34,51,.12);
+  --shadow:0 10px 30px rgba(15,34,51,.18);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --marque:#7CEB96; --marque-2:#7CEB96; --orange-ink:#F5C431; --orange-soft:rgba(245,196,49,.14); --blue-soft:#1B3044; --ciel-doux:#173A55;
+  --bg:#0B1620; --panel:#122230; --ink:#E6EEF4; --muted:#93A6B6; --line:#24384A;
+  --accent-ink:#0F2233; --chip:#1B3044; --chip-on:#E6EEF4; --chip-on-ink:#0B1620;}}
+:root[data-theme="dark"]{
+  --marque:#7CEB96; --marque-2:#7CEB96; --orange-ink:#F5C431; --orange-soft:rgba(245,196,49,.14); --blue-soft:#1B3044; --ciel-doux:#173A55;
+  --bg:#0B1620; --panel:#122230; --ink:#E6EEF4; --muted:#93A6B6; --line:#24384A;
+  --accent-ink:#0F2233; --chip:#1B3044; --chip-on:#E6EEF4; --chip-on-ink:#0B1620;}
+/* en-tête marine, comme le menu du QG */
+header.top{background:var(--marine);color:var(--sur-marine);border:0;border-radius:18px;padding:12px 16px;margin-bottom:14px}
+header.top .brand p,header.top .who{color:var(--sur-marine-2)}
+header.top .btn,header.top .btn.s,header.top a.btn{background:var(--marine-haute);color:var(--sur-marine);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+@media (max-width:600px){header.top{padding:10px 12px}}
+/* le ciel de l'appli en aplat, texte marine */
+.inbox-btn,.selbar .p{background:var(--ciel);color:var(--marine);box-shadow:none}
+.cbadge{background:var(--ciel);color:var(--marine)}
+.ribbon .mk{background:var(--ciel)}
+/* « À taguer » : état « à revoir » de la charte (ambre) ; les autres fonds d'appoint en gris bleuté ou ciel doux */
+.rule{background:var(--chip)}
+.cm.on{background:var(--ciel-doux);box-shadow:inset 0 0 0 1px var(--ciel)}
+/* marine de la charte pour la barre de sélection, les messages et la visionneuse */
+.selbar{background:color-mix(in srgb,var(--marine) 92%,transparent)}
+.toast{background:var(--marine)}
+.lb .tools button[aria-pressed="true"]{background:#fff;color:var(--marine)}
+.card .trash button.p{background:var(--vert-eclat);color:var(--marine)}
 </style>
 <script>
 /* thème : la barre de résultats devient translucide seulement quand elle colle en haut */
@@ -502,7 +541,7 @@ const color = n => { const i = CUR.indexOf(n); return i < 0 ? '#9aa5a8' : PALETT
 const crewName = (n, long) => CUR.includes(n) || n === AUTRE ? esc(n) : `<span class="old">${esc(n)}${long && D.crewSeason[n] ? ' · saison ' + esc(D.crewSeason[n]) : ''}</span>`;
 const thumb = (m, w) => THUMBS[m.id] ? THUMBS[m.id].replace(/=s\d+$/, '=s' + w) : `${DRV}/thumbnail?id=${m.id}&sz=w${w}`;
 
-const VERSION = '14-11 polices'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
+const VERSION = '16-11 couleurs'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
 let FACETS = [], state = {q:'', grp:'seance'};
 const selected = new Set();
 let selAnchor = '';
