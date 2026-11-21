@@ -51,6 +51,15 @@ Règle commune des applis reliées (demandée par Benjamin le 20/11, DECISIONS 3
 - Une donnée, un seul propriétaire (DECISIONS 3.15) : cette appli lit les données du QG et n'écrit jamais chez lui
   autrement que par son API.
 
+## Liens et filtres dans l'adresse (21/11)
+
+- `?media=<id>` ouvre un média ; le bouton « Copier le lien » de la visionneuse le donne (clé publique seule, jamais
+  la clé de gestion). `?selection=favoris` (★) ou `coeur` et `?allure=` filtrent au départ, comme `vent`, `theme`,
+  `equipage`, `date`, `type`.
+- Côté QG : la prépa de nav choisit ses vidéos de référence dans le Studio intégré (message `etat`, champ `choix`, une
+  retouche du mode intégré), et le lien d'une vidéo y est `/le-studio/?media=<id>`. Détail : `apps/studio/LISEZMOI.md`
+  du dépôt QG.
+
 ## Où lire le reste
 
 - Le studio dans le QG (mode intégré, contrat, vidéo, cadre) : `apps/studio/LISEZMOI.md` du dépôt QG.
