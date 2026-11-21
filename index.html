@@ -542,7 +542,7 @@ const color = n => { const i = CUR.indexOf(n); return i < 0 ? '#9aa5a8' : PALETT
 const crewName = (n, long) => CUR.includes(n) || n === AUTRE ? esc(n) : `<span class="old">${esc(n)}${long && D.crewSeason[n] ? ' · saison ' + esc(D.crewSeason[n]) : ''}</span>`;
 const thumb = (m, w) => THUMBS[m.id] ? THUMBS[m.id].replace(/=s\d+$/, '=s' + w) : `${DRV}/thumbnail?id=${m.id}&sz=w${w}`;
 
-const VERSION = '16-11 ciel'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
+const VERSION = '21-11 liens'; /* à changer à chaque mise à jour : visible en haut de la page pour le propriétaire */
 let FACETS = [], state = {q:'', grp:'seance'};
 const selected = new Set();
 let selAnchor = '';
@@ -750,6 +750,7 @@ function infosHtml(m){
       <div class="acts"><a class="btn p" href="${dlUrl(m)}" target="_blank" rel="noopener">Télécharger l'original</a>
         <a class="btn s" href="${DRV}/file/d/${m.id}/view" target="_blank" rel="noopener">Ouvrir dans Drive</a>
         <button class="btn s" data-sel="${m.id}">${selected.has(m.id) ? 'Retirer de la sélection' : 'Ajouter à la sélection'}</button>
+        <button class="btn s" data-lien="${m.id}">Copier le lien</button>
         <button class="btn s" data-bilan="${m.id}">Pour un bilan</button>${D.me.staff ? `<button class="btn s" data-dateone="${m.id}">Changer la date</button>` : ''}</div>
       ${D.me.owner ? `<div class="acts"><button class="btn s" data-mdel="${m.id}" style="color:#b3261e">Supprimer ce média</button></div>` : ''}
       <div id="bilanLink" hidden></div>`;
@@ -1028,6 +1029,7 @@ document.addEventListener('click', async e => {
       <div class="acts"><button class="btn s" data-tgclose="1">Fermer</button></div></div>`;
     $('tagpanel').hidden = false; tagDraft = null; return;
   }
+  if (d.lien) { copierLien(d.lien); return; }
   if (d.bilan) {
     /* lien à coller dans le champ « Image ou vidéo de la photothèque » d'un bilan du site : la vidéo s'y lit directement */
     const url = `${DRV}/file/d/${d.bilan}/view`, box = $('bilanLink');
@@ -1144,6 +1146,9 @@ function applyParams(p){
   const notes = [], norm = s => String(s).replace(/\s+/g, '').replace(/[‐-―-]/g, '–');
   if (p.equipage) CUR.includes(p.equipage) ? state.crew.add(p.equipage) : notes.push(`équipage « ${p.equipage} » absent de la saison`);
   if (p.type === 'video') state.type.add('Vidéo'); if (p.type === 'photo') state.type.add('Photo');
+  /* « référence » : l'étoile (Favoris) ; allure : comme les tags (« Près », « Largue »…) */
+  if (p.selection === 'favoris') state.mark.add('★ Favoris'); if (p.selection === 'coeur') state.mark.add('♥ Coups de cœur');
+  if (p.allure) { const a = D.lists.allures.find(x => x.toLowerCase() === String(p.allure).toLowerCase()); a ? state.allure.add(a) : notes.push(`allure « ${p.allure} » non reconnue`); }
   if (p.date === 'hors') p.date = HORS;
   if (p.date) MEDIA.some(m => m.date === p.date) ? state.seance.add(p.date) : notes.push(`aucun média ${duJour(p.date)}`);
   if (p.vent) { const w = D.lists.vents.find(x => norm(x) === norm(p.vent)); w ? state.wind.add(w) : notes.push(`vent « ${p.vent} » non reconnu`); }
@@ -1151,6 +1156,20 @@ function applyParams(p){
   if (notes.length) toast('Filtres du site appliqués. À noter : ' + notes.join(', ') + '.');
 }
 
+/* ---------- le lien d'un média : ?media=<id> l'ouvre directement (avec la clé publique du lien en cours) ---------- */
+const lienMedia = id => { const b = baseAcces(), c = PARAMS.cle || D.cle; return b && c ? b + '?cle=' + encodeURIComponent(c) + '&media=' + encodeURIComponent(id) : ''; };
+function copierLien(id){
+  const l = lienMedia(id);
+  if (!l) { toast('Lien indisponible : ouvrez le Studio par son lien habituel.'); return; }
+  const ok = () => toast('Lien copié : il ouvre ce média dans le Studio.');
+  (navigator.clipboard ? navigator.clipboard.writeText(l) : Promise.reject()).then(ok, () => toast('Lien : ' + l));
+}
+/* un lien ?media=<id> : ouvrir ce média, même s'il est hors des filtres en cours */
+function ouvrirMedia(id){
+  if (!id || !MEDIA.some(m => m.id === id)) return;
+  if (!current.some(m => m.id === id)) { FACETS.forEach(f => state[f.key].clear()); state.q = ''; if (state.periode) { state.periode = null; buildFacets(); } renderAll(); }
+  lbIdx = current.findIndex(m => m.id === id); renderLb();
+}
 /* « Changer de compte » sans compte Google : vue visiteur, ou code de gestion du propriétaire */
 const baseAcces = () => API ? location.origin + location.pathname : (D.exec || '');
 function changerAcces(){
@@ -1188,7 +1207,7 @@ function load(json){
 /* délai dépassé : presque toujours plusieurs comptes Google connectés dans le navigateur */
 const timeout = ms => new Promise((_, ko) => setTimeout(() => ko(new Error(API ? 'Le serveur du Studio ne répond pas. Vérifiez la connexion internet, puis rechargez la page.' : 'Le serveur ne répond pas. Si plusieurs comptes Google sont connectés dans ce navigateur, ouvrez le Studio dans une fenêtre privée avec un seul compte.')), ms));
 (DATA0 ? Promise.resolve(DATA0) : ERR0 ? Promise.reject(new Error('Erreur du serveur : ' + ERR0)) : Promise.race([run('getData', PARAMS.cle), timeout(30000)])).then(json => {
-  load(json); applyParams(PARAMS); renderAll();
+  load(json); applyParams(PARAMS); renderAll(); ouvrirMedia(PARAMS.media);
   run('getThumbs', PARAMS.cle).then(t => { THUMBS = JSON.parse(t); document.querySelectorAll('img[data-tid]').forEach(i => { const m = MEDIA.find(x => x.id === i.dataset.tid); if (m && THUMBS[m.id]) i.src = thumb(m, 480); }); }).catch(() => {});
 }).catch(err => { $('results').innerHTML = `<div class="empty">${esc(err.message)}</div>`; $('sub').textContent = ''; });
 })();
