@@ -60,6 +60,19 @@ Règle commune des applis reliées (demandée par Benjamin le 20/11, DECISIONS 3
   retouche du mode intégré), et le lien d'une vidéo y est `/le-studio/?media=<id>`. Détail : `apps/studio/LISEZMOI.md`
   du dépôt QG.
 
+## Ce que le QG lit du Studio : les News du coureur (23/11)
+
+Les News du QG (DECISIONS 5.16) disent au coureur qu'une vidéo a été publiée pour lui ici. Le studio le dit au QG par
+son API habituelle, sans rien de nouveau dans le script : `GET /api/studio/nouveautes` du QG lit le catalogue avec la
+clé publique, comme cette page (`POST` à l'adresse de `const API`, `{fn:'getData', args:[cle], gestion:'', p:{cle}}`),
+et n'en garde que `id`, `type`, `date`, `crews`, `riders` des médias récents et « Hors dates ». Le QG décide ensuite
+ce qui est pour le coureur (son équipage, ou son prénom dans « Coureurs ») et ouvre la vidéo par `/le-studio/?media=<id>`.
+
+**À reporter côté QG dans le même fil** si l'un de ces points change ici : l'adresse `/exec` de `const API` (l'essai
+`essais/studio-nouveautes.test.ts` du QG la compare à `apps/studio/index.html` et passe au rouge au report), la forme
+de la réponse de getData, les noms des champs ci-dessus, le libellé « Hors dates », ou le paramètre `?media=`. Détail :
+`apps/studio/LISEZMOI.md` du QG, partie « Les News du coureur ».
+
 ## Où lire le reste
 
 - Le studio dans le QG (mode intégré, contrat, vidéo, cadre) : `apps/studio/LISEZMOI.md` du dépôt QG.
