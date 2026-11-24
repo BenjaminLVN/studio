@@ -37,6 +37,16 @@ briques, et une ligne au journal).
 Les PR se fusionnent seules quand tout est vert (accord de Benjamin du 15/11) : ne demande jamais à Benjamin de fusionner
 ni de déployer.
 
+## Icône (famille des outils du QG)
+
+Depuis le 24/11 (choix de Benjamin, « coin foncé », DECISIONS 2.26 ; fil « Repenser les icônes des applis reliées ») :
+tuile en dégradé bleu `#6CC4FF` → `#2E8FD6` et léopard en filigrane inchangés (2.25) ; en haut à droite, un quart de
+disque bleu nuit `#0A2F5E` avec la caméra pleine dans la teinte pâle `#DDF1FF` ; plus de symbole blanc au centre. Sous
+48 px (16, 32) : tuile `#0A2F5E`, symbole pâle seul. Fichiers : `icone-studio-*.png`, et les trois icônes écrites en
+toutes lettres dans l'en-tête d'`index.html` (16, 32, 180 ; le logo de l'en-tête reprend la 180). On ne les retouche pas
+à la main : elles sortent du kit `identite/icones-qg-secu/archives/outils-coin-fonce/` des fichiers du projet « QG du
+Centre » (`kit8.py`), commun à La caisse, à La machine, à La forme et à La route. L'icône du QG, elle, ne change pas.
+
 ## Relation avec le QG : une demande, les deux côtés
 
 Règle commune des applis reliées (demandée par Benjamin le 20/11, DECISIONS 3.19 ; fiche de référence :
